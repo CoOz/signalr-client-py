@@ -2,6 +2,7 @@ import json
 import sys
 
 import gevent
+from string import lower
 
 if sys.version_info[0] < 3:
     from urlparse import urlparse, urlunparse
@@ -32,10 +33,19 @@ class WebSocketsTransport(Transport):
     def start(self):
         ws_url = self.__get_ws_url_from(self._get_url('connect'))
 
+        proxy_dict = {}
+        if hasattr(self._session, 'proxies'):
+            target_scheme = lower(ws_url).split(':')[0] if ':' in ws_url else ''
+            if target_scheme in self._session.proxies:
+                rgx = '(?P<scheme>[^:]+)://((?P<user>[^:]+):(?P<password>[^@]+)@)?(?P<host>[^/:]+)(:(?P<port>\d+))?/?(?P<path>.*)'
+                m = re.search(rgx, self._session.proxies[target_scheme])
+                proxy_dict = {'http_proxy_host': m.group('host'), 'http_proxy_port': m.group('port')}
+
         self.ws = create_connection(ws_url,
                                     header=self.__get_headers(),
                                     cookie=self.__get_cookie_str(),
-                                    enable_multithread=True)
+                                    enable_multithread=True,
+                                    **proxy_dict)
         self._session.get(self._get_url('start'))
 
         def _receive():
