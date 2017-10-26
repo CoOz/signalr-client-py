@@ -3,6 +3,7 @@ import sys
 
 import gevent
 from string import lower
+import re
 
 if sys.version_info[0] < 3:
     from urlparse import urlparse, urlunparse
@@ -39,7 +40,7 @@ class WebSocketsTransport(Transport):
             if target_scheme in self._session.proxies:
                 rgx = '(?P<scheme>[^:]+)://((?P<user>[^:]+):(?P<password>[^@]+)@)?(?P<host>[^/:]+)(:(?P<port>\d+))?/?(?P<path>.*)'
                 m = re.search(rgx, self._session.proxies[target_scheme])
-                proxy_dict = {'http_proxy_host': m.group('host'), 'http_proxy_port': m.group('port')}
+                proxy_dict = {'http_proxy_host': m.group('host'), 'http_proxy_port': int(m.group('port'))}
 
         self.ws = create_connection(ws_url,
                                     header=self.__get_headers(),
